@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { addExpense } from "@/app/actions";
 import { CATEGORIES, type FormState } from "@/lib/schemas";
+import ImpactToast from "./ImpactToast";
 
 export default function QuickExpense() {
   const [state, formAction, pending] = useActionState(addExpense, {} as FormState);
@@ -58,6 +59,10 @@ export default function QuickExpense() {
 
         {(error("amount") || error("category") || error("note")) && (
           <p className="text-sm text-red-600">{error("amount") ?? error("category") ?? error("note")}</p>
+        )}
+
+        {state.impact && (
+          <ImpactToast key={state.impact.id} days={state.impact.days} goalName={state.impact.goalName} />
         )}
       </form>
     </section>

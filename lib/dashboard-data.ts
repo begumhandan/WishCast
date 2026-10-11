@@ -1,12 +1,10 @@
 import { endOfDay, startOfDay } from "date-fns";
 import { prisma } from "./db";
 import { buildDashboard } from "./dashboard";
+import { isClosable, periodLeftover, previousPeriod } from "./closing";
 
-/**
- * Panonun ihtiyaç duyduğu verileri veritabanından okur ve hesaplar.
- * Profil ya da hedef eksikse null döner.
- */
-export async function getDashboardData(userId: string, now: Date) {
+/** Kullanıcının profilini ve hedefini okur. Eksikse null döner. */
+export async function loadProfile(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -22,38 +20,67 @@ export async function getDashboardData(userId: string, now: Date) {
     return null;
   }
 
-  const fixedTotal = user.fixedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-
-  // Önce dönemi bulmak için hesaplamayı harcamasız yapıyoruz, sonra dönem harcamalarını çekiyoruz
-  const { period } = buildDashboard({
-    now,
+  return {
     income: user.monthlyIncome,
     payday: user.payday,
-    fixedTotal,
+    fixedTotal: user.fixedExpenses.reduce((sum, expense) => sum + expense.amount, 0),
     goal,
-    spentInPeriod: 0,
-  });
+  };
+}
 
-  const [periodSum, todayExpenses] = await Promise.all([
-    prisma.expense.aggregate({
-      where: { userId, spentAt: { gte: period.start, lte: endOfDay(period.end) } },
-      _sum: { amount: true },
-    }),
+type Profile = NonNullable<Awaited<ReturnType<typeof loadProfile>>>;
+
+async function sumExpenses(userId: string, start: Date, end: Date) {
+  const result = await prisma.expense.aggregate({
+    where: { userId, spentAt: { gte: start, lte: endOfDay(end) } },
+    _sum: { amount: true },
+  });
+  return result._sum.amount ?? 0;
+}
+
+/** Kapatılmayı bekleyen önceki dönem ve o dönemde artan para. Yoksa null. */
+export async function getPendingClose(userId: string, profile: Profile, now: Date) {
+  const period = previousPeriod(now, profile.payday);
+  if (!isClosable(period, profile.goal.createdAt)) {
+    return null;
+  }
+
+  const alreadyClosed = await prisma.periodClose.findUnique({
+    where: { userId_periodStart: { userId, periodStart: period.start } },
+    select: { id: true },
+  });
+  if (alreadyClosed) {
+    return null;
+  }
+
+  const spent = await sumExpenses(userId, period.start, period.end);
+  const leftover = periodLeftover({ income: profile.income, fixedTotal: profile.fixedTotal, spent });
+  return { period, leftover };
+}
+
+/** Panonun ihtiyaç duyduğu tüm verileri okur ve hesaplar. Profil ya da hedef eksikse null döner. */
+export async function getDashboardData(userId: string, now: Date) {
+  const profile = await loadProfile(userId);
+  if (!profile) {
+    return null;
+  }
+
+  const input = { now, ...profile, spentInPeriod: 0 };
+
+  // Önce dönemi bulmak için hesaplamayı harcamasız yapıyoruz, sonra dönem harcamalarını çekiyoruz
+  const { period } = buildDashboard(input);
+
+  const [spentInPeriod, todayExpenses, pendingClose] = await Promise.all([
+    sumExpenses(userId, period.start, period.end),
     prisma.expense.findMany({
       where: { userId, spentAt: { gte: startOfDay(now), lte: endOfDay(now) } },
       orderBy: { spentAt: "desc" },
       select: { id: true, amount: true, category: true, note: true, spentAt: true },
     }),
+    getPendingClose(userId, profile, now),
   ]);
 
-  const dashboard = buildDashboard({
-    now,
-    income: user.monthlyIncome,
-    payday: user.payday,
-    fixedTotal,
-    goal,
-    spentInPeriod: periodSum._sum.amount ?? 0,
-  });
+  const dashboard = buildDashboard({ ...input, spentInPeriod });
 
-  return { goal, dashboard, todayExpenses };
+  return { goal: profile.goal, dashboard, todayExpenses, pendingClose };
 }

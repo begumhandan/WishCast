@@ -8,6 +8,7 @@ import { signIn, signOut } from "@/lib/auth";
 import { getDashboardData } from "@/lib/dashboard-data";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import PeriodCloseCard from "@/components/PeriodCloseCard";
 
 export default function Home() {
   return (
@@ -55,6 +56,9 @@ async function AuthSection() {
 
       {data ? (
         <>
+          {data.pendingClose && (
+          <PeriodCloseCard period={data.pendingClose.period} leftover={data.pendingClose.leftover} />
+          )}
           <AllowanceCard dashboard={data.dashboard} />
           <QuickExpense />
           <TodayExpenses expenses={data.todayExpenses} />

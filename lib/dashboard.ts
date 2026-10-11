@@ -27,6 +27,7 @@ export type Dashboard = {
   period: Period;
   monthsLeft: number;
   monthlySaving: number;
+  savingRate: number; // tahminde kullanılan aylık birikim (kuruş)
   spendable: number;
   feasible: boolean;
   remaining: number;
@@ -62,6 +63,7 @@ export function buildDashboard(input: DashboardInput): Dashboard {
     period,
     monthsLeft,
     monthlySaving,
+    savingRate: savingForEstimate,
     spendable,
     feasible,
     remaining: spendable - spentInPeriod,

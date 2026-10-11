@@ -1,13 +1,14 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireUserId } from "@/lib/session";
-import { revalidatePath } from "next/cache";
+import { delayInDays } from "@/lib/closing";
+import { buildDashboard } from "@/lib/dashboard";
+import { getPendingClose, loadProfile } from "@/lib/dashboard-data";
 import { expenseSchema, FIXED_EXPENSES, goalSchema, profileSchema, type FormState } from "@/lib/schemas";
-
-
 
 export async function saveProfile(_prev: FormState, formData: FormData): Promise<FormState> {
   const userId = await requireUserId();
@@ -57,6 +58,7 @@ export async function saveGoal(_prev: FormState, formData: FormData): Promise<Fo
 
   redirect("/");
 }
+
 export async function addExpense(_prev: FormState, formData: FormData): Promise<FormState> {
   const userId = await requireUserId();
 
@@ -76,7 +78,16 @@ export async function addExpense(_prev: FormState, formData: FormData): Promise<
   });
 
   revalidatePath("/");
-  return {};
+
+  // Harcamanın hedefe etkisini hesapla
+  const profile = await loadProfile(userId);
+  if (!profile) return {};
+
+  const { savingRate } = buildDashboard({ now: new Date(), ...profile, spentInPeriod: 0 });
+  const days = delayInDays(parsed.data.amount, savingRate);
+  if (days === null) return {};
+
+  return { impact: { id: Date.now(), days, goalName: profile.goal.name } };
 }
 
 export async function deleteExpense(expenseId: string): Promise<void> {
@@ -84,6 +95,34 @@ export async function deleteExpense(expenseId: string): Promise<void> {
 
   // userId koşulu sayesinde kimse başkasının harcamasını silemez
   await prisma.expense.deleteMany({ where: { id: expenseId, userId } });
+
+  revalidatePath("/");
+}
+
+export async function closePeriod(): Promise<void> {
+  const userId = await requireUserId();
+
+  const profile = await loadProfile(userId);
+  if (!profile) return;
+
+  // Tutarı formdan ALMIYORUZ; sunucuda yeniden hesaplıyoruz
+  const pending = await getPendingClose(userId, profile, new Date());
+  if (!pending) return;
+
+  try {
+    await prisma.$transaction([
+      prisma.periodClose.create({
+        data: { userId, periodStart: pending.period.start, leftover: pending.leftover },
+      }),
+      prisma.goal.update({
+        where: { id: profile.goal.id },
+        data: { saved: { increment: pending.leftover } },
+      }),
+    ]);
+  } catch (error) {
+    // P2002: benzersizlik ihlali. Dönem aynı anda iki kez kapatılmaya çalışıldı; ikincisini yok say.
+    if ((error as { code?: string }).code !== "P2002") throw error;
+  }
 
   revalidatePath("/");
 }

@@ -27,7 +27,9 @@ export default function GoalProgress({ goal, dashboard }: Props) {
       </p>
 
       <p className="mt-4">
-        {estimatedDate ? (
+        {progress >= 1 ? (
+          <strong className="text-emerald-600">🎉 Hedefine ulaştın! Artık alabilirsin.</strong>
+        ) : estimatedDate ? (
           <>
             Tahmini alım tarihi: <strong>{formatDate(estimatedDate)}</strong>
           </>
@@ -37,7 +39,7 @@ export default function GoalProgress({ goal, dashboard }: Props) {
           </strong>
         )}
       </p>
-      {feasible && (
+      {feasible && progress < 1 && (
         <p className="mt-1 text-sm text-gray-500">
           Hedef için kalan {monthsLeft} ay boyunca ayda {formatTL(monthlySaving)} ayırıyorsun.
         </p>

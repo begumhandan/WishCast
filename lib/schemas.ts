@@ -9,8 +9,9 @@ export const CATEGORIES = ["Yemek", "Market", "Ulaşım", "Eğlence", "Alışver
 export type FormState = {
   errors?: Record<string, string[] | undefined>;
   values?: Record<string, string>;
+  /** Harcama eklendiğinde: hedefi kaç gün geciktirdiği */
+  impact?: { id: number; days: number; goalName: string };
 };
-
 /** Onboarding formundaki sabit gider satırları. */
 export const FIXED_EXPENSES = [
   { key: "rent", label: "Kira" },
