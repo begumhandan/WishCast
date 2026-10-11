@@ -1,7 +1,8 @@
-import { endOfDay, startOfDay } from "date-fns";
+import { endOfDay } from "date-fns";
 import { prisma } from "./db";
 import { buildDashboard } from "./dashboard";
 import { isClosable, periodLeftover, previousPeriod } from "./closing";
+import { categoryTotals, dailySeries } from "./series";
 
 /** Kullanıcının profilini ve hedefini okur. Eksikse null döner. */
 export async function loadProfile(userId: string) {
@@ -70,17 +71,24 @@ export async function getDashboardData(userId: string, now: Date) {
   // Önce dönemi bulmak için hesaplamayı harcamasız yapıyoruz, sonra dönem harcamalarını çekiyoruz
   const { period } = buildDashboard(input);
 
-  const [spentInPeriod, todayExpenses, pendingClose] = await Promise.all([
-    sumExpenses(userId, period.start, period.end),
+  const [periodExpenses, pendingClose] = await Promise.all([
     prisma.expense.findMany({
-      where: { userId, spentAt: { gte: startOfDay(now), lte: endOfDay(now) } },
+      where: { userId, spentAt: { gte: period.start, lte: endOfDay(period.end) } },
       orderBy: { spentAt: "desc" },
       select: { id: true, amount: true, category: true, note: true, spentAt: true },
     }),
     getPendingClose(userId, profile, now),
   ]);
 
+  const spentInPeriod = periodExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   const dashboard = buildDashboard({ ...input, spentInPeriod });
 
-  return { goal: profile.goal, dashboard, todayExpenses, pendingClose };
+  return {
+    goal: profile.goal,
+    dashboard,
+    pendingClose,
+    daily: dailySeries(period, periodExpenses),
+    categories: categoryTotals(periodExpenses),
+    recentExpenses: periodExpenses.slice(0, 6),
+  };
 }

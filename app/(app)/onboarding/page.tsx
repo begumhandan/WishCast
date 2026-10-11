@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import PageHeader from "@/components/PageHeader";
 import ProfileForm from "@/components/ProfileForm";
 import { prisma } from "@/lib/db";
 import { toTLInput } from "@/lib/money";
@@ -7,18 +8,12 @@ import { requireUserId } from "@/lib/session";
 
 export default function OnboardingPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 p-8">
-      <div>
-        <h1 className="text-3xl font-bold">Seni tanıyalım</h1>
-        <p className="mt-1 text-gray-500">
-          Bütçeni hesaplayabilmemiz için gelirini, maaş gününü ve sabit giderlerini gir.
-        </p>
-      </div>
-
-      <Suspense fallback={<p className="text-gray-400">Yükleniyor…</p>}>
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <PageHeader title="Bütçe ayarları" description="Günlük limitin bu bilgilerden hesaplanır. Sadece sen görürsün." />
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-surface-hover" />}>
         <ProfileFormLoader />
       </Suspense>
-    </main>
+    </div>
   );
 }
 

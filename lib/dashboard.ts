@@ -1,4 +1,4 @@
-import { differenceInCalendarMonths } from "date-fns";
+import { differenceInCalendarDays, differenceInCalendarMonths } from "date-fns";
 import {
   budgetForPeriod,
   dailyAllowance,
@@ -31,6 +31,8 @@ export type Dashboard = {
   spendable: number;
   feasible: boolean;
   remaining: number;
+  spentInPeriod: number;
+  daysLeft: number; // bugün dahil dönemde kalan gün
   allowanceToday: number;
   progress: number; // 0-1
   estimatedDate: Date | null;
@@ -67,6 +69,8 @@ export function buildDashboard(input: DashboardInput): Dashboard {
     spendable,
     feasible,
     remaining: spendable - spentInPeriod,
+    spentInPeriod,
+    daysLeft: Math.max(0, differenceInCalendarDays(period.end, now) + 1),
     allowanceToday,
     progress: goal.price > 0 ? Math.min(1, goal.saved / goal.price) : 0,
     estimatedDate,

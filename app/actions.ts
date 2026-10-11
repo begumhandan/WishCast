@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { signOut } from "@/lib/auth";
 import { requireUserId } from "@/lib/session";
 import { delayInDays } from "@/lib/closing";
 import { buildDashboard } from "@/lib/dashboard";
@@ -56,7 +57,7 @@ export async function saveGoal(_prev: FormState, formData: FormData): Promise<Fo
     await prisma.goal.create({ data: { ...data, userId } });
   }
 
-  redirect("/");
+  redirect("/dashboard");
 }
 
 export async function addExpense(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -77,7 +78,7 @@ export async function addExpense(_prev: FormState, formData: FormData): Promise<
     },
   });
 
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 
   // Harcamanın hedefe etkisini hesapla
   const profile = await loadProfile(userId);
@@ -96,7 +97,7 @@ export async function deleteExpense(expenseId: string): Promise<void> {
   // userId koşulu sayesinde kimse başkasının harcamasını silemez
   await prisma.expense.deleteMany({ where: { id: expenseId, userId } });
 
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function closePeriod(): Promise<void> {
@@ -124,5 +125,9 @@ export async function closePeriod(): Promise<void> {
     if ((error as { code?: string }).code !== "P2002") throw error;
   }
 
-  revalidatePath("/");
+  revalidatePath("/", "layout");
+}
+
+export async function signOutAction(): Promise<void> {
+  await signOut({ redirectTo: "/" });
 }

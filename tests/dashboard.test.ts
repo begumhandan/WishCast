@@ -49,3 +49,11 @@ describe("buildDashboard", () => {
     expect(result.estimatedDate).toEqual(d(2027, 4, 10));
   });
 });
+
+describe("buildDashboard: dönem ilerlemesi", () => {
+  it("bugün dahil kalan gün sayısını ve harcananı verir", () => {
+    const result = buildDashboard(base);
+    expect(result.daysLeft).toBe(5);
+    expect(result.spentInPeriod).toBe(400_000);
+  });
+});

@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
+/* ---------- WishCast tasarım token'ları (Linear/Vercel tarzı nötr tema) ---------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  color-scheme: light;
+  --bg: #ffffff;            /* sayfa zemini */
+  --panel: #fafafa;         /* kenar menü, ikincil alanlar */
+  --surface: #ffffff;       /* kartlar */
+  --surface-hover: #f4f4f5;
+  --line: #e4e4e7;          /* ince kenarlıklar */
+  --line-strong: #d4d4d8;
+  --ink: #18181b;           /* ana metin */
+  --muted: #71717a;         /* ikincil metin */
+  --subtle: #a1a1aa;        /* üçüncül metin, ikonlar */
+  --accent: #5e6ad2;        /* tek vurgu rengi */
+  --accent-hover: #4f5bc4;
+  --accent-soft: #eef0fb;
+  --on-accent: #ffffff;
+  --positive: #15803d;
+  --positive-soft: #ecfdf3;
+  --negative: #dc2626;
+  --negative-soft: #fef2f2;
+  --warning: #b45309;
+  --warning-soft: #fffbeb;
+  --chart: #5e6ad2;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+    --bg: #0f1011;
+    --panel: #0b0c0d;
+    --surface: #151618;
+    --surface-hover: #1c1d20;
+    --line: #26272b;
+    --line-strong: #34353a;
+    --ink: #ececee;
+    --muted: #8a8f98;
+    --subtle: #62666d;
+    --accent: #7c86e8;
+    --accent-hover: #9099ee;
+    --accent-soft: #1e2033;
+    --on-accent: #0f1011;
+    --positive: #4ade80;
+    --positive-soft: #10241a;
+    --negative: #f87171;
+    --negative-soft: #2a1414;
+    --warning: #fbbf24;
+    --warning-soft: #2a2110;
+    --chart: #7c86e8;
   }
 }
 
+/* Token'ları Tailwind sınıflarına bağla: bg-surface, text-muted, border-line, bg-accent ... */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Recharts renkleri SVG attribute'u olarak yazar; CSS ile token'lara bağlıyoruz */
+.wish-chart .recharts-bar-rectangle path {
+  fill: var(--chart);
+}
+.wish-chart .recharts-cartesian-axis-tick-value {
+  fill: var(--muted);
+  font-size: 12px;
+}
+.wish-chart .recharts-cartesian-grid line {
+  stroke: var(--line);
+}
+.wish-chart .recharts-reference-line line {
+  stroke: var(--muted);
+}
+.wish-chart .recharts-reference-line text {
+  fill: var(--muted);
+}
+
+/* Native <dialog> arka planı */
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(2px);
 }

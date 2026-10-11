@@ -1,23 +1,18 @@
 import { Suspense } from "react";
 import GoalForm from "@/components/GoalForm";
+import PageHeader from "@/components/PageHeader";
 import { prisma } from "@/lib/db";
 import { toTLInput } from "@/lib/money";
 import { requireUserId } from "@/lib/session";
 
 export default function GoalPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 p-8">
-      <div>
-        <h1 className="text-3xl font-bold">Hedefin ne? 🎯</h1>
-        <p className="mt-1 text-gray-500">
-          Almak istediğin şeyi ve ne zamana kadar almak istediğini yaz, gerisini WishCast hesaplasın.
-        </p>
-      </div>
-
-      <Suspense fallback={<p className="text-gray-400">Yükleniyor…</p>}>
+    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <PageHeader title="Hedef" description="Almak istediğin şeyi gir; WishCast ne zaman alabileceğini hesaplasın." />
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-surface-hover" />}>
         <GoalFormLoader />
       </Suspense>
-    </main>
+    </div>
   );
 }
 
