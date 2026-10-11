@@ -14,13 +14,13 @@ It tells you **how much you can spend today**, shows **how much each expense del
 and keeps **the date you'll actually get it** up to date - even as prices keep rising.
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="WishCast dashboard" width="820" />
+  <img src="docs/screenshots/dashboard.png" alt="WishCast dashboard (light)" width="100%" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/mobile.png" alt="Mobile dashboard" width="200" />
-  &nbsp;
-  <img src="docs/screenshots/dashboard-dark.png" alt="Dark mode" width="600" />
+  <img src="docs/screenshots/showcase.png" alt="Dark mode and mobile layout" width="100%" />
+  <br />
+  <sub>Automatic dark mode · Mobile layout with bottom tab bar</sub>
 </p>
 
 ---
@@ -50,11 +50,12 @@ monthly saving needed = ⌈ (price − saved) / months left ⌉
 spendable this period = income − fixed expenses − monthly saving
 daily allowance       = ⌊ (spendable − spent so far) / days left (incl. today) ⌋
 period leftover       = income − fixed expenses − spent in period   → added to the wish
-expense delay (days)  = expense / (monthly saving × 12 / 365)
 ```
 
-**The forecast** simulates month by month: savings grow by the monthly saving while the price grows
-by the monthly inflation rate. The first month where savings ≥ price is the wish date.
+**The forecast** simulates day by day: this period's projected saving (income − fixed − what you've spent
+− the planned budget for the remaining days) accrues over the days left, then the monthly saving accrues
+daily, while the price grows by the monthly inflation rate. The first day where savings ≥ price is the wish date,
+so every expense can move it.
 
 **Example:** a ₺60,000 phone, ₺10,000 already saved, ₺10,000 saved every month.
 
@@ -70,7 +71,7 @@ by the monthly inflation rate. The first month where savings ≥ price is the wi
 - **Database:** Prisma 7 with the `better-sqlite3` driver adapter (SQLite in development)
 - **Auth:** Auth.js v5 (GitHub OAuth) + Prisma adapter, database sessions
 - **Validation & dates:** zod 4, date-fns
-- **Testing:** Vitest (73 unit tests)
+- **Testing:** Vitest (96 unit tests)
 
 ## 📁 Project structure
 
@@ -151,9 +152,8 @@ npx vitest run
   second close of the same period.
 - **Partial periods are not closable.** If a user signs up mid-period, that period's full income
   is not credited to the goal - only periods that start after the goal was created.
-- **Expense delay uses the daily saving rate,** not a second forecast simulation. The forecast moves
-  in whole months, so a ₺250 expense would show as either "0 days" or "30 days"; dividing by the
-  daily saving rate gives a meaningful number for small expenses. Trade-off: it ignores inflation.
+- **Expense delay comes from the forecast itself.** The dashboard is computed once before and once after
+  the expense, and the toast shows the difference, so the toast and the goal card can never disagree.
 - **Cache Components.** The static shell of every page is prerendered; anything that reads the
   session sits behind `<Suspense>`, and `connection()` is called before Auth.js so its random
   CSRF token is never generated during prerendering.
