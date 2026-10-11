@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------- Auth.js tabloları (GitHub girişi için) ----------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  // WishCast profili (onboarding'de doldurulur)
+  monthlyIncome Int? // kuruş
+  payday        Int? // 1-31
+
+  accounts      Account[]
+  sessions      Session[]
+  fixedExpenses FixedExpense[]
+  goals         Goal[]
+  expenses      Expense[]
+  periodCloses  PeriodClose[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// ---------- WishCast tabloları ----------
+
+model FixedExpense {
+  id     String @id @default(cuid())
+  userId String
+  name   String
+  amount Int // kuruş
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Goal {
+  id               String   @id @default(cuid())
+  userId           String
+  name             String
+  price            Int // kuruş
+  saved            Int      @default(0) // kuruş
+  targetMonths     Int
+  monthlyInflation Float    @default(0) // 0.02 = aylık %2
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Expense {
+  id       String   @id @default(cuid())
+  userId   String
+  amount   Int // kuruş
+  category String
+  note     String?
+  spentAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, spentAt])
+}
+
+model PeriodClose {
+  id          String   @id @default(cuid())
+  userId      String
+  periodStart DateTime
+  leftover    Int // kuruş
+  closedAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodStart])
+}
