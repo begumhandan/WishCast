@@ -2,6 +2,8 @@
 
 const tlFormatter = new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" });
 const TL_PATTERN = /^(\d+|\d{1,3}(?:\.\d{3})+)(?:,(\d{1,2}))?$/;
+const tlInputFormatter = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 2 });
+
 /**
  * "1.933,33" gibi Türkçe biçimli bir tutarı kuruşa çevirir.
  * Nokta binlik, virgül ondalık ayırıcıdır. Ondalık kısım en fazla 2 hane olabilir.
@@ -24,4 +26,9 @@ return lira * 100 + kurus;
 /** Kuruşu "₺1.933,33" biçiminde metne çevirir (Intl.NumberFormat, tr-TR). */
 export function formatTL(kurus: number): string {
   return tlFormatter.format(kurus / 100);
+}
+
+/** Kuruşu form alanında gösterilecek, parseTL'in geri okuyabileceği metne çevirir: 1250 → "12,5" */
+export function toTLInput(kurus: number): string {
+  return tlInputFormatter.format(kurus / 100);
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTL, formatTL } from "../lib/money";
+import { parseTL, formatTL, toTLInput} from "../lib/money";
 
 describe("parseTL (metin → kuruş)", () => {
   it.each([
@@ -19,4 +19,9 @@ describe("parseTL (metin → kuruş)", () => {
 
 it("formatTL (kuruş → ₺)", () => {
   expect(formatTL(193_333).replace(/\s/g, "")).toBe("₺1.933,33");
+});
+
+
+it.each([4_000_000, 193_333, 1_250, 100_000, 5])("toTLInput(%i) parseTL ile geri okunabilir", (kurus) => {
+  expect(parseTL(toTLInput(kurus))).toBe(kurus);
 });
