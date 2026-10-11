@@ -82,10 +82,7 @@ export function dailyAllowance(args: {
 /** Tahmin en fazla bu kadar ay ileriye bakar (120 ay = 10 yıl). */
 const MAX_MONTHS = 120;
 
-/**
- * Ay ay simülasyon: her ay birikim += monthlySaving, fiyat *= (1 + monthlyInflation).
- * Birikimin fiyata ulaştığı ilk ayın tarihini döndürür. 120 ayda ulaşılamıyorsa null.
- */
+
 /**
  * Ay ay simülasyon: fiyat her ay (1 + monthlyInflation) ile büyür.
  * İlk ay firstMonthSaving kadar (içinde bulunulan dönemin gerçekçi birikimi),
