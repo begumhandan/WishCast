@@ -6,10 +6,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { signOut } from "@/lib/auth";
 import { requireUserId } from "@/lib/session";
-import { delayInDays } from "@/lib/closing";
 import { resolveSpentAt, toDateInput } from "@/lib/expense-date";
-import { buildDashboard } from "@/lib/dashboard";
-import { getPendingClose, loadProfile } from "@/lib/dashboard-data";
+import { expenseImpact, getPendingClose, loadProfile } from "@/lib/dashboard-data";
 import { expenseSchema, FIXED_EXPENSES, goalSchema, profileSchema, type FormState } from "@/lib/schemas";
 
 export async function saveProfile(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -88,15 +86,11 @@ export async function addExpense(_prev: FormState, formData: FormData): Promise<
 
   revalidatePath("/", "layout");
 
-  // Harcamanın hedefe etkisini hesapla
-  const profile = await loadProfile(userId);
-  if (!profile) return { saved: true };
+  // Harcamanın tahmini tarihe etkisi (panodaki hesabın aynısıyla)
+  const impact = await expenseImpact(userId, parsed.data.amount, spentAt.date, now);
+  if (!impact) return { saved: true };
 
-  const { savingRate } = buildDashboard({ now, ...profile, spentInPeriod: 0 });
-  const days = delayInDays(parsed.data.amount, savingRate);
-  if (days === null) return { saved: true };
-
-  return { saved: true, impact: { id: Date.now(), days, goalName: profile.goal.name } };
+  return { saved: true, impact: { id: Date.now(), ...impact } };
 }
 
 export async function updateExpense(expenseId: string, _prev: FormState, formData: FormData): Promise<FormState> {

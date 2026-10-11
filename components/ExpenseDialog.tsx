@@ -153,7 +153,9 @@ export default function ExpenseDialog(props: Props) {
         </form>
       </dialog>
 
-      {state.impact && <ImpactToast key={state.impact.id} days={state.impact.days} goalName={state.impact.goalName} />}
+      {state.impact && (
+        <ImpactToast key={state.impact.id} goalName={state.impact.goalName} days={state.impact.days} newDate={state.impact.newDate} />
+      )}
     </>
   );
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { CalendarDays, PiggyBank } from "lucide-react";
+import { differenceInCalendarDays } from "date-fns";
+import { CalendarDays, PiggyBank, TrendingUp, TriangleAlert } from "lucide-react";
 import { formatTL } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
 import { card, cardHeader, cardTitle } from "@/lib/ui";
@@ -11,7 +12,10 @@ type Props = {
 };
 
 export default function GoalCard({ goal, dashboard }: Props) {
-  const { progress, estimatedDate, monthlySaving, monthsLeft, feasible } = dashboard;
+  const { progress, estimatedDate, plannedDate, overspent, monthlySaving, monthsLeft, feasible } = dashboard;
+  // Bu dönemki fazla harcama tarihi ne kadar öteledi?
+  const delayDays =
+    estimatedDate && plannedDate ? differenceInCalendarDays(estimatedDate, plannedDate) : estimatedDate ? 0 : null;
   const percent = Math.round(progress * 100);
   const reached = progress >= 1;
 
@@ -63,6 +67,29 @@ export default function GoalCard({ goal, dashboard }: Props) {
             </div>
           )}
         </dl>
+
+        {!reached && delayDays !== 0 && (
+          <p
+            className={`mt-4 flex gap-2 rounded-lg px-3 py-2 text-xs ${
+              delayDays !== null && delayDays < 0 ? "bg-positive-soft text-positive" : "bg-negative-soft text-negative"
+            }`}
+          >
+            {delayDays !== null && delayDays < 0 ? (
+              <TrendingUp size={14} className="mt-px shrink-0" />
+            ) : (
+              <TriangleAlert size={14} className="mt-px shrink-0" />
+            )}
+            <span>
+              {delayDays === null
+                ? "Bu dönemki harcamalarla hedefe 10 yıl içinde ulaşılamıyor."
+                : delayDays < 0
+                  ? `Plandan ${-delayDays} gün öndesin. Böyle devam!`
+                  : `Bu dönemki harcamaların tarihi plana göre ${delayDays} gün öteledi${
+                      overspent > 0 ? ` (bütçeyi ${formatTL(overspent)} aştın)` : ""
+                    }.`}
+            </span>
+          </p>
+        )}
 
         {goal.monthlyInflation > 0 && !reached && (
           <p className="mt-4 rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning">

@@ -40,13 +40,15 @@ describe("buildDashboard", () => {
     const result = buildDashboard({ ...base, income: 2_000_000 });
     expect(result.feasible).toBe(false);
     expect(result.allowanceToday).toBe(0);
-    // Ayda en fazla 200.000 kuruş ayırabilir: 5.000.000 / 200.000 = 25 ay
-    expect(result.estimatedDate).toEqual(d(2028, 11, 10));
+    // Ayda en fazla 200.000 kuruş ayırabilir; bu dönem 400.000 harcandığı için bu dönem birikim yok
+    expect(result.plannedDate).toEqual(d(2028, 10, 15));
+    expect(result.estimatedDate).toEqual(d(2028, 11, 14));
   });
 
-  it("planlanan birikimle tahmini tarih hedef süresine denk gelir", () => {
+  it("planlanan birikimle tahmini tarih", () => {
     const result = buildDashboard(base);
-    expect(result.estimatedDate).toEqual(d(2027, 4, 10));
+    // 5 günde bu dönemin birikimi, sonra ayda 833.334 → 17 Mart 2027
+    expect(result.plannedDate).toEqual(d(2027, 3, 17));
   });
 });
 

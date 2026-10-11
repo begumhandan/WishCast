@@ -56,18 +56,27 @@ export function periodFor(date: Date, payday: number): Period {
   return { start, end: subDays(nextPayday, 1) };
 }
 
-/** Kalan parayı bugün dahil dönemde kalan günlere böler, aşağı yuvarlar. En az 0. */
-export function dailyAllowance(args: { spendable: number; spent: number; today: Date; period: Period }): number {
-  const { spendable, spent, today, period } = args;
-
+/**
+ * Bugün harcayabileceğin tutar.
+ * Günün başındaki bütçe (dönemde kalan / bugün dahil kalan gün) hesaplanır,
+ * bugün harcanan tutar bundan TAMAMEN düşülür. spent: bugün dahil dönemde harcanan toplam.
+ */
+export function dailyAllowance(args: {
+  spendable: number;
+  spent: number;
+  today: Date;
+  period: Period;
+  spentToday?: number;
+}): number {
+  const { spendable, spent, today, period, spentToday = 0 } = args;
   const daysLeft = differenceInCalendarDays(period.end, today) + 1;
-  const remaining = spendable - spent;
+  if (daysLeft <= 0) return 0;
 
-  if (remaining <= 0 || daysLeft <= 0) {
-    return 0;
-  }
+  const remainingAtStartOfDay = spendable - (spent - spentToday);
+  if (remainingAtStartOfDay <= 0) return 0;
 
-  return Math.floor(remaining / daysLeft);
+  const budgetForToday = Math.floor(remainingAtStartOfDay / daysLeft);
+  return Math.max(0, budgetForToday - spentToday);
 }
 
 /** Tahmin en fazla bu kadar ay ileriye bakar (120 ay = 10 yıl). */
@@ -77,23 +86,24 @@ const MAX_MONTHS = 120;
  * Ay ay simülasyon: her ay birikim += monthlySaving, fiyat *= (1 + monthlyInflation).
  * Birikimin fiyata ulaştığı ilk ayın tarihini döndürür. 120 ayda ulaşılamıyorsa null.
  */
+/**
+ * Ay ay simülasyon: fiyat her ay (1 + monthlyInflation) ile büyür.
+ * İlk ay firstMonthSaving kadar (içinde bulunulan dönemin gerçekçi birikimi),
+ * sonraki her ay monthlySaving kadar birikir. 120 ayda ulaşılamıyorsa null.
+ */
 export function estimateGoalDate(args: {
   price: number;
   saved: number;
   monthlySaving: number;
   monthlyInflation: number;
   from: Date;
+  firstMonthSaving?: number;
 }): Date | null {
-  const { price, saved, monthlySaving, monthlyInflation, from } = args;
-
-for (let month = 0; month <= MAX_MONTHS; month++) {
-  const savedThen = saved + monthlySaving * month;
-  const priceThen = price * (1 + monthlyInflation) ** month;
-
-  if (savedThen >= priceThen) {
-    return addMonths(from, month);
+  const { price, saved, monthlySaving, monthlyInflation, from, firstMonthSaving = monthlySaving } = args;
+  for (let month = 0; month <= MAX_MONTHS; month++) {
+    const savedThen = month === 0 ? saved : saved + firstMonthSaving + monthlySaving * (month - 1);
+    const priceThen = price * (1 + monthlyInflation) ** month;
+    if (savedThen >= priceThen) return addMonths(from, month);
   }
-}
-
-return null;
+  return null;
 }

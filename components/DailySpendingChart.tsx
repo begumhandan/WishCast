@@ -12,13 +12,13 @@ export default function DailySpendingChart({ data, dailyBudget }: { data: Row[];
   return (
     <div className="wish-chart h-56 w-full" role="img" aria-label="Günlük harcama grafiği">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 16, right: 8, bottom: 0, left: -8 }}>
+        <BarChart data={data} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid vertical={false} strokeDasharray="0" />
           <XAxis dataKey="day" tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={12} />
           <YAxis
             tickLine={false}
             axisLine={false}
-            width={44}
+            width={56}
             tickFormatter={(value) => axisNumber.format(Number(value) / 100)}
           />
           <Tooltip

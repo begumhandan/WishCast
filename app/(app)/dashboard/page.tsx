@@ -50,7 +50,11 @@ async function Dashboard() {
           value={formatTL(dashboard.allowanceToday)}
           icon={Wallet}
           tone="accent"
-          hint={`${dashboard.daysLeft} gün kaldı`}
+          hint={
+            dashboard.spentToday > 0
+              ? `Bugün ${formatTL(dashboard.spentToday)} harcadın · ${dashboard.daysLeft} gün kaldı`
+              : `${dashboard.daysLeft} gün kaldı`
+          }
         />
         <StatCard
           label="Dönemde kalan"

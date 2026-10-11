@@ -8,7 +8,7 @@ export type FormState = {
   /** Kayıt başarılıysa true (pencereyi kapatmak için) */
   saved?: boolean;
   /** Harcama eklendiğinde: hedefi kaç gün geciktirdiği */
-  impact?: { id: number; days: number; goalName: string };
+  impact?: { id: number; goalName: string; days: number | null; newDate: string | null };
 };
 
 /** Onboarding formundaki sabit gider satırları. */
