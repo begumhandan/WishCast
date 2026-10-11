@@ -1,5 +1,13 @@
 // WishCast iş mantığı. SAF fonksiyonlar: veritabanı, framework ya da Date.now() kullanmaz.
 // Tüm tutarlar kuruş cinsinden tamsayıdır.
+import { differenceInCalendarDays, getDaysInMonth, startOfDay, subDays } from "date-fns";
+
+
+/** Verilen ayın gerçek maaş günü. Maaş günü o ayda yoksa ayın son günü. */
+function paydayIn(year: number, month: number, payday: number): Date {
+  const daysInMonth = getDaysInMonth(new Date(year, month, 1));
+  return new Date(year, month, Math.min(payday, daysInMonth));
+}
 
 export type Period = { start: Date; end: Date };
 
@@ -36,12 +44,31 @@ return { spendable, feasible: spendable >= 0 };
  * Maaş günü ayın gün sayısından büyükse ayın son gününe kayar.
  */
 export function periodFor(date: Date, payday: number): Period {
-  throw new Error("TODO: periodFor");
+  const today = startOfDay(date);
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  const thisMonthsPayday = paydayIn(year, month, payday);
+  const start = today >= thisMonthsPayday
+    ? thisMonthsPayday
+    : paydayIn(year, month - 1, payday);
+
+  const nextPayday = paydayIn(start.getFullYear(), start.getMonth() + 1, payday);
+  return { start, end: subDays(nextPayday, 1) };
 }
 
 /** Kalan parayı bugün dahil dönemde kalan günlere böler, aşağı yuvarlar. En az 0. */
 export function dailyAllowance(args: { spendable: number; spent: number; today: Date; period: Period }): number {
-  throw new Error("TODO: dailyAllowance");
+  const { spendable, spent, today, period } = args;
+
+  const daysLeft = differenceInCalendarDays(period.end, today) + 1;
+  const remaining = spendable - spent;
+
+  if (remaining <= 0 || daysLeft <= 0) {
+    return 0;
+  }
+
+  return Math.floor(remaining / daysLeft);
 }
 
 /**
