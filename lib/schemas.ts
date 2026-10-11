@@ -1,17 +1,16 @@
 import { z } from "zod";
 import { parseTL } from "./money";
 
-export const CATEGORIES = ["Yemek", "Market", "Ulaşım", "Eğlence", "Alışveriş", "Diğer"] as const;
-
-
-
 /** Server Action'ların forma geri döndürdüğü durum. */
 export type FormState = {
   errors?: Record<string, string[] | undefined>;
   values?: Record<string, string>;
+  /** Kayıt başarılıysa true (pencereyi kapatmak için) */
+  saved?: boolean;
   /** Harcama eklendiğinde: hedefi kaç gün geciktirdiği */
   impact?: { id: number; days: number; goalName: string };
 };
+
 /** Onboarding formundaki sabit gider satırları. */
 export const FIXED_EXPENSES = [
   { key: "rent", label: "Kira" },
@@ -84,8 +83,12 @@ export const goalSchema = z.object({
 });
 
 /** Hızlı harcama ekleme kategorileri. */
+export const CATEGORIES = ["Yemek", "Market", "Ulaşım", "Eğlence", "Alışveriş", "Diğer"] as const;
+
 export const expenseSchema = z.object({
   amount: tlField("Tutar").refine((v) => v > 0, "Tutar 0'dan büyük olmalı"),
   category: z.enum(CATEGORIES, { error: "Bir kategori seç" }),
   note: z.string().trim().max(80, "Not en fazla 80 karakter olabilir").optional(),
+  /** "2026-10-11" biçiminde; boşsa bugün. Tarih aralığı action içinde kontrol edilir. */
+  spentOn: z.string().trim().optional(),
 });

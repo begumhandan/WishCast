@@ -2,7 +2,9 @@ import { Trash2 } from "lucide-react";
 import { deleteExpense } from "@/app/actions";
 import { categoryIcon } from "@/lib/categories";
 import { formatShortDate, formatTime } from "@/lib/dates";
-import { formatTL } from "@/lib/money";
+import { toDateInput } from "@/lib/expense-date";
+import { formatTL, toTLInput } from "@/lib/money";
+import ExpenseDialog from "./ExpenseDialog";
 
 type Expense = { id: string; amount: number; category: string; note: string | null; spentAt: Date };
 
@@ -27,6 +29,16 @@ export default function ExpenseList({ expenses, empty = "Henüz harcama yok." }:
               </p>
             </div>
             <span className="text-sm font-medium tabular-nums">−{formatTL(expense.amount)}</span>
+            <ExpenseDialog
+              mode="edit"
+              expense={{
+                id: expense.id,
+                amount: toTLInput(expense.amount),
+                category: expense.category,
+                note: expense.note ?? "",
+                spentOn: toDateInput(expense.spentAt),
+              }}
+            />
             <form action={deleteExpense.bind(null, expense.id)}>
               <button
                 type="submit"

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { signOut } from "@/lib/auth";
 import { requireUserId } from "@/lib/session";
 import { delayInDays } from "@/lib/closing";
+import { resolveSpentAt, toDateInput } from "@/lib/expense-date";
 import { buildDashboard } from "@/lib/dashboard";
 import { getPendingClose, loadProfile } from "@/lib/dashboard-data";
 import { expenseSchema, FIXED_EXPENSES, goalSchema, profileSchema, type FormState } from "@/lib/schemas";
@@ -69,12 +70,19 @@ export async function addExpense(_prev: FormState, formData: FormData): Promise<
     return { errors: z.flattenError(parsed.error).fieldErrors, values: raw };
   }
 
+  const now = new Date();
+  const spentAt = resolveSpentAt(parsed.data.spentOn, now);
+  if (!spentAt.ok) {
+    return { errors: { spentOn: [spentAt.error] }, values: raw };
+  }
+
   await prisma.expense.create({
     data: {
       userId,
       amount: parsed.data.amount,
       category: parsed.data.category,
       note: parsed.data.note || null,
+      spentAt: spentAt.date,
     },
   });
 
@@ -82,13 +90,55 @@ export async function addExpense(_prev: FormState, formData: FormData): Promise<
 
   // Harcamanın hedefe etkisini hesapla
   const profile = await loadProfile(userId);
-  if (!profile) return {};
+  if (!profile) return { saved: true };
 
-  const { savingRate } = buildDashboard({ now: new Date(), ...profile, spentInPeriod: 0 });
+  const { savingRate } = buildDashboard({ now, ...profile, spentInPeriod: 0 });
   const days = delayInDays(parsed.data.amount, savingRate);
-  if (days === null) return {};
+  if (days === null) return { saved: true };
 
-  return { impact: { id: Date.now(), days, goalName: profile.goal.name } };
+  return { saved: true, impact: { id: Date.now(), days, goalName: profile.goal.name } };
+}
+
+export async function updateExpense(expenseId: string, _prev: FormState, formData: FormData): Promise<FormState> {
+  const userId = await requireUserId();
+
+  const raw = Object.fromEntries(formData) as Record<string, string>;
+  const parsed = expenseSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { errors: z.flattenError(parsed.error).fieldErrors, values: raw };
+  }
+
+  // Sahiplik kontrolü: harcama bu kullanıcıya ait değilse bulunamaz
+  const existing = await prisma.expense.findFirst({
+    where: { id: expenseId, userId },
+    select: { spentAt: true },
+  });
+  if (!existing) {
+    return { errors: { amount: ["Harcama bulunamadı"] }, values: raw };
+  }
+
+  // Tarih değişmediyse orijinal saati koru
+  let spentAt = existing.spentAt;
+  if (parsed.data.spentOn && parsed.data.spentOn !== toDateInput(existing.spentAt)) {
+    const resolved = resolveSpentAt(parsed.data.spentOn, new Date());
+    if (!resolved.ok) {
+      return { errors: { spentOn: [resolved.error] }, values: raw };
+    }
+    spentAt = resolved.date;
+  }
+
+  await prisma.expense.updateMany({
+    where: { id: expenseId, userId },
+    data: {
+      amount: parsed.data.amount,
+      category: parsed.data.category,
+      note: parsed.data.note || null,
+      spentAt,
+    },
+  });
+
+  revalidatePath("/", "layout");
+  return { saved: true };
 }
 
 export async function deleteExpense(expenseId: string): Promise<void> {
