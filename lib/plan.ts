@@ -1,7 +1,6 @@
 // WishCast iş mantığı. SAF fonksiyonlar: veritabanı, framework ya da Date.now() kullanmaz.
 // Tüm tutarlar kuruş cinsinden tamsayıdır.
-import { differenceInCalendarDays, getDaysInMonth, startOfDay, subDays } from "date-fns";
-
+import { addMonths, differenceInCalendarDays, getDaysInMonth, startOfDay, subDays } from "date-fns";
 
 /** Verilen ayın gerçek maaş günü. Maaş günü o ayda yoksa ayın son günü. */
 function paydayIn(year: number, month: number, payday: number): Date {
@@ -71,6 +70,9 @@ export function dailyAllowance(args: { spendable: number; spent: number; today: 
   return Math.floor(remaining / daysLeft);
 }
 
+/** Tahmin en fazla bu kadar ay ileriye bakar (120 ay = 10 yıl). */
+const MAX_MONTHS = 120;
+
 /**
  * Ay ay simülasyon: her ay birikim += monthlySaving, fiyat *= (1 + monthlyInflation).
  * Birikimin fiyata ulaştığı ilk ayın tarihini döndürür. 120 ayda ulaşılamıyorsa null.
@@ -82,5 +84,16 @@ export function estimateGoalDate(args: {
   monthlyInflation: number;
   from: Date;
 }): Date | null {
-  throw new Error("TODO: estimateGoalDate");
+  const { price, saved, monthlySaving, monthlyInflation, from } = args;
+
+for (let month = 0; month <= MAX_MONTHS; month++) {
+  const savedThen = saved + monthlySaving * month;
+  const priceThen = price * (1 + monthlyInflation) ** month;
+
+  if (savedThen >= priceThen) {
+    return addMonths(from, month);
+  }
+}
+
+return null;
 }
