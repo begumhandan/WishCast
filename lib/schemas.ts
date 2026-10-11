@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { parseTL } from "./money";
 
+export const CATEGORIES = ["Yemek", "Market", "Ulaşım", "Eğlence", "Alışveriş", "Diğer"] as const;
+
+
+
 /** Server Action'ların forma geri döndürdüğü durum. */
 export type FormState = {
   errors?: Record<string, string[] | undefined>;
@@ -76,4 +80,11 @@ export const goalSchema = z.object({
       }
       return percent / 100;
     }),
+});
+
+/** Hızlı harcama ekleme kategorileri. */
+export const expenseSchema = z.object({
+  amount: tlField("Tutar").refine((v) => v > 0, "Tutar 0'dan büyük olmalı"),
+  category: z.enum(CATEGORIES, { error: "Bir kategori seç" }),
+  note: z.string().trim().max(80, "Not en fazla 80 karakter olabilir").optional(),
 });

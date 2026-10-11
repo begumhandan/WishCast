@@ -1,17 +1,23 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import AllowanceCard from "@/components/AllowanceCard";
+import GoalProgress from "@/components/GoalProgress";
+import QuickExpense from "@/components/QuickExpense";
+import TodayExpenses from "@/components/TodayExpenses";
 import { signIn, signOut } from "@/lib/auth";
-import { getSession } from "@/lib/session";
+import { getDashboardData } from "@/lib/dashboard-data";
 import { prisma } from "@/lib/db";
-import { formatTL } from "@/lib/money";
+import { getSession } from "@/lib/session";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-      <h1 className="text-5xl font-bold">🔮 WishCast</h1>
-      <p className="text-lg text-gray-500">Forecast the day you get what you want.</p>
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col gap-6 p-6">
+      <header className="pt-6 text-center">
+        <h1 className="text-4xl font-bold">🔮 WishCast</h1>
+        <p className="text-gray-500">Forecast the day you get what you want.</p>
+      </header>
 
-      <Suspense fallback={<p className="text-gray-400">Yükleniyor…</p>}>
+      <Suspense fallback={<p className="text-center text-gray-400">Yükleniyor…</p>}>
         <AuthSection />
       </Suspense>
     </main>
@@ -24,6 +30,7 @@ async function AuthSection() {
   if (!session?.user?.id) {
     return (
       <form
+        className="flex justify-center"
         action={async () => {
           "use server";
           await signIn("github");
@@ -39,52 +46,48 @@ async function AuthSection() {
     );
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { monthlyIncome: true, goals: { take: 1 } },
-  });
-  const goal = user?.goals[0];
+  const userId = session.user.id;
+  const data = await getDashboardData(userId, new Date());
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <p className="text-2xl font-semibold">Merhaba, {session.user.name} 👋</p>
+    <div className="flex flex-col gap-4">
+      <p className="text-center text-lg">Merhaba, {session.user.name} 👋</p>
 
-      {!user?.monthlyIncome ? (
-        <NextStep href="/onboarding" text="Başlamak için gelirini ve giderlerini gir" />
-      ) : !goal ? (
-        <NextStep href="/goal" text="Şimdi hedefini belirle" />
+      {data ? (
+        <>
+          <AllowanceCard dashboard={data.dashboard} />
+          <QuickExpense />
+          <TodayExpenses expenses={data.todayExpenses} />
+          <GoalProgress goal={data.goal} dashboard={data.dashboard} />
+        </>
       ) : (
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-gray-600">
-            Hedefin: <strong>{goal.name}</strong> ({formatTL(goal.price)})
-          </p>
-          <p className="text-gray-400">Pano 8. adımda burada olacak.</p>
-          <div className="flex gap-4 text-sm">
-            <Link href="/onboarding" className="underline">Gelir ve giderler</Link>
-            <Link href="/goal" className="underline">Hedefi düzenle</Link>
-          </div>
-        </div>
+        <SetupSteps userId={userId} />
       )}
 
-      <form
-        action={async () => {
-          "use server";
-          await signOut();
-        }}
-      >
-        <button type="submit" className="rounded-lg border px-4 py-2 hover:bg-gray-100">
-          Çıkış yap
-        </button>
-      </form>
+      <nav className="flex justify-center gap-4 text-sm text-gray-500">
+        <Link href="/onboarding" className="underline">Gelir ve giderler</Link>
+        <form
+          action={async () => {
+            "use server";
+            await signOut();
+          }}
+        >
+          <button type="submit" className="underline">Çıkış yap</button>
+        </form>
+      </nav>
     </div>
   );
 }
 
-function NextStep({ href, text }: { href: string; text: string }) {
+async function SetupSteps({ userId }: { userId: string }) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { monthlyIncome: true } });
+  const href = user?.monthlyIncome ? "/goal" : "/onboarding";
+  const text = user?.monthlyIncome ? "Şimdi hedefini belirle" : "Başlamak için gelirini ve giderlerini gir";
+
   return (
     <Link
       href={href}
-      className="rounded-lg bg-black px-6 py-3 font-medium text-white hover:bg-gray-800"
+      className="rounded-lg bg-black px-6 py-3 text-center font-medium text-white hover:bg-gray-800"
     >
       {text} →
     </Link>
