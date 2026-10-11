@@ -5,7 +5,18 @@ export type Period = { start: Date; end: Date };
 
 /** Kalan tutarı kalan aylara böler, yukarı yuvarlar. months <= 0 ise RangeError. */
 export function monthlySavingNeeded(args: { price: number; saved: number; months: number }): number {
-  throw new Error("TODO: monthlySavingNeeded");
+  const { price, saved, months } = args;
+
+if (months <= 0) {
+  throw new RangeError("Ay sayısı pozitif olmalı");
+}
+
+const remaining = price - saved;
+if (remaining <= 0) {
+  return 0;
+}
+
+return Math.ceil(remaining / months);
 }
 
 /** Harcanabilir = gelir − sabit giderler − aylık birikim. Negatifse feasible = false. */
@@ -13,7 +24,10 @@ export function budgetForPeriod(args: { income: number; fixed: number; saving: n
   spendable: number;
   feasible: boolean;
 } {
-  throw new Error("TODO: budgetForPeriod");
+  const { income, fixed, saving } = args;
+const spendable = income - fixed - saving;
+
+return { spendable, feasible: spendable >= 0 };
 }
 
 /**
